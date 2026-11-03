@@ -9,7 +9,7 @@ Tienda web pública de la botica **Nova Salud**. Los clientes ven el catálogo, 
 | **nova-salud-tienda** (este) | Tienda web pública |
 
 ## Tecnologías
-React 18 + Vite 5. Sin login para el cliente: se identifica con su nombre y celular.
+React 18 + Vite 8, CSS propio e íconos SVG sin dependencias extra. Sin login para el cliente: se identifica con su nombre y celular. Diseño adaptable a celular, tablet y escritorio.
 
 ## Cómo ejecutarlo
 1. Ten la API funcionando (ver su README).
