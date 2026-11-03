@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import Tema from './Tema.jsx'
+import ImagenProducto from './ImagenProducto.jsx'
 import { api, money } from './api.js'
 import { useCarrito } from './carrito.jsx'
 
@@ -23,8 +25,8 @@ export default function App() {
     <>
       <header className="top">
         <div className="wrap top-in">
-          <a href="#/" className="brand"><span className="mark">+</span><span><b>Nova Salud</b><small>Botica en línea</small></span></a>
-          <nav className="top-nav">
+          <a href="#/" className="brand" aria-label="Nova Salud, ir al catálogo"><span className="brand-logo-frame"><img className="brand-logo" src="/images/nova-salud-logo.png" alt="Nova Salud" /></span></a>
+          <nav className="top-nav"><Tema /><a href="#/">Catálogo</a>
             <a href="#/seguimiento">Seguir mi pedido</a>
             <a href="#/carrito" className="cart-btn" aria-label={`Carrito, ${unidades} productos`}>Carrito {unidades > 0 && <span className="pill">{unidades}</span>}</a>
           </nav>
@@ -63,19 +65,27 @@ function Catalogo() {
       <section className="hero">
         <div className="wrap hero-in">
           <div>
-            <h1>Tus medicamentos, sin hacer cola</h1>
-            <p>Pide en línea y recógelo en tienda en minutos, o recíbelo en casa. Precios iguales a los de mostrador.</p>
+            <p className="eyebrow">TU BOTICA, MÁS CERCA</p><h1><span>Cuidarte empieza</span><br /><span className="hero-accent">por algo simple.</span></h1>
+            <p>Encuentra lo que necesitas para tu bienestar. Explora el catálogo, prepara tu pedido y elige cómo recibirlo.</p>
             <div className="hero-tags"><span>Recojo en 30 min</span><span>Delivery en Lima</span><span>Yape, tarjeta o contra entrega</span></div>
+            <a className="btn hero-cta" href="#catalogo" onClick={(event) => { event.preventDefault(); document.getElementById('catalogo')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }) }}>Explorar productos <span aria-hidden="true">↗</span></a>
+          </div>
+          <div className="hero-art" aria-hidden="true">
+            <div className="art-orbit"></div>
+            <div className="art-cross">+</div>
+            <div className="art-label"><span>✦</span> Un poco más de bienestar</div>
+            <div className="art-pill"></div>
+            <div className="art-dot"></div>
           </div>
         </div>
       </section>
-      <div className="wrap">
+      <div className="wrap" id="catalogo">
         {promos.length > 0 && (
           <section className="promo-band">
-            <b>Ofertas de la semana:</b> {promos.map((p) => p.nombre).join(' · ')} con 20% de descuento
+            <b>Ofertas de la semana:</b> {promos.map((p) => p.nombre).join(' · ')} · Consulta el precio especial de cada producto
           </section>
         )}
-        <div className="filtros">
+        <div className="catalog-heading"><div><p className="eyebrow">BIENESTAR A TU ALCANCE</p><h2>Explora nuestra botica</h2></div><span className="muted">{lista.length} productos</span></div><div className="filtros">
           <input className="search" placeholder="¿Qué estás buscando? Ej. paracetamol" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar producto" />
           <div className="chips">{cats.map((c) => <button key={c} className={'chip' + (cat === c ? ' on' : '')} onClick={() => setCat(c)}>{c}</button>)}</div>
         </div>
@@ -83,14 +93,14 @@ function Catalogo() {
         {!prods && !error && <div className="grid">{[...Array(8)].map((_, i) => <div key={i} className="card sk" />)}</div>}
         {prods && lista.length === 0 && <div className="empty"><b>No encontramos “{q}”</b><p>Prueba con otro nombre o revisa todas las categorías.</p><button className="btn sec" onClick={() => { setQ(''); setCat('Todas') }}>Ver todo el catálogo</button></div>}
         <div className="grid">
-          {lista.map((p) => {
+          {lista.map((p, indice) => {
             const enCarrito = items.find((i) => i.id === p.id)?.cant || 0
             const lleno = enCarrito >= p.disponible
             return (
-              <article key={p.id} className={'card prod' + (p.agotado ? ' off' : '')}>
-                <div className="prod-img" aria-hidden="true"><span>{p.nombre.split(' ')[0].slice(0, 2)}</span></div>
+              <article key={p.id} style={{ '--entrada': `${Math.min(indice, 7) * 65}ms` }} className={'card prod' + (p.agotado ? ' off' : '')}>
+                <ImagenProducto producto={p} />
                 <div className="prod-tags">
-                  {p.enPromocion && <span className="tag green">-20%</span>}
+                  {p.enPromocion && <span className="tag green">{p.precio > p.precioFinal ? `−${Math.round((1 - p.precioFinal / p.precio) * 100)}%` : "Oferta"}</span>}
                   {p.requiereReceta && <span className="tag amber">Requiere receta</span>}
                   {!p.agotado && p.disponible <= 5 && <span className="tag red">¡Últimas {p.disponible}!</span>}
                 </div>

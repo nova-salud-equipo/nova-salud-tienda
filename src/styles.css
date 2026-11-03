@@ -1,4 +1,4 @@
-:root{--teal:#0F766E;--teal-d:#115E59;--teal-l:#CCFBF1;--mint:#F0FDFA;--bg:#F8FAFC;--ink:#0F172A;--mut:#64748B;--line:#E2E8F0;--red:#DC2626;--red-l:#FEE2E2;--amber:#B45309;--amber-l:#FEF3C7;--green:#15803D;--green-l:#DCFCE7}
+:root{--teal:#6354B8;--teal-d:#453A8E;--teal-l:#E8E4FB;--mint:#F4F1FF;--bg:#FAF9FD;--ink:#272440;--mut:#64748B;--line:#E2E8F0;--red:#DC2626;--red-l:#FEE2E2;--amber:#B45309;--amber-l:#FEF3C7;--green:#15803D;--green-l:#DCFCE7}
 *{box-sizing:border-box}
 body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}
 h1,h2,h3,p{margin:0}a{color:var(--teal)}button{font:inherit;cursor:pointer}
@@ -21,7 +21,7 @@ input:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--teal);o
 .chips{display:flex;gap:8px;flex-wrap:wrap}.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-size:14px;min-height:38px}.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;padding-bottom:48px}
 .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px}
-.card.sk{height:280px;background:linear-gradient(90deg,#EEF2F6,#F8FAFC,#EEF2F6);background-size:200% 100%;animation:sk 1.2s infinite}@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.card.sk{height:280px;background:linear-gradient(90deg,#EEF2F6,#FAF9FD,#EEF2F6);background-size:200% 100%;animation:sk 1.2s infinite}@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){.card.sk{animation:none}}
 .prod{display:flex;flex-direction:column;gap:6px;transition:box-shadow .15s,border-color .15s}.prod:hover{border-color:#99D5CF;box-shadow:0 4px 14px rgba(15,118,110,.1)}.prod.off{opacity:.6}
 .prod-img{height:110px;border-radius:12px;background:var(--mint);display:grid;place-items:center;margin-bottom:6px}.prod-img span{font-size:30px;font-weight:800;color:#99D5CF;text-transform:uppercase}
@@ -53,3 +53,129 @@ em{font-style:normal;font-size:13px}.err{color:var(--red)}
 .steps li{border-top:4px solid var(--line);padding-top:10px}.steps li.done{border-color:var(--teal)}.steps small{display:block;color:var(--mut);font-size:13px}
 .foot{border-top:1px solid var(--line);background:#fff}.foot-in{display:flex;justify-content:space-between;gap:16px;padding:24px 20px;flex-wrap:wrap;font-size:14px}
 @media (max-width:820px){.checkout{grid-template-columns:1fr}.hero h1{font-size:28px}.top-nav a:first-child{display:none}.opts{grid-template-columns:1fr}.steps{grid-template-columns:1fr}}
+
+/* Identidad Nova Salud: lavanda azulada y superficies claras. */
+.top-in { min-height: 84px; height: auto; padding-top: 16px; padding-bottom: 16px; }
+.brand b { font-size: 23px; letter-spacing: -.7px; }
+.mark { width: 46px; height: 46px; border-radius: 16px; font-size: 32px; }
+.hero { background: #e9e6f7; color: var(--ink); border-bottom: 1px solid #ded9ee; }
+.hero-in { padding-top: 70px; padding-bottom: 70px; }
+.hero h1 { font-size: clamp(38px, 5.5vw, 64px); letter-spacing: -2px; max-width: 760px; }
+.hero p { color: #55516c; line-height: 1.7; }
+.eyebrow { font-size: 11px !important; letter-spacing: 2px; font-weight: 750; margin-bottom: 16px; color: var(--teal) !important; }
+.hero-tags span { background: #ffffffb3; color: #51496d; border: 1px solid #fff; }
+.catalog-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-top: 40px; }
+.catalog-heading h2 { font-size: 30px; letter-spacing: -1px; }
+.catalog-heading .eyebrow { margin-bottom: 6px; }
+.search { max-width: 100%; padding: 16px 20px; border-radius: 16px; }
+.filtros { gap: 18px; }
+.chip { padding: 10px 18px; border-radius: 12px; }
+.chip.on { background: var(--teal); border-color: var(--teal); }
+.grid { gap: 22px; }
+.card { border-color: #e8e4f0; border-radius: 22px; padding: 22px; }
+.prod { transition: box-shadow .2s, transform .2s; }
+.prod:hover { box-shadow: 0 12px 30px #453a8e12; transform: translateY(-3px); }
+.prod-img { background: #f2effa; border-radius: 16px; min-height: 150px; }
+.prod-img span { color: var(--teal); }
+.btn { border-radius: 12px; }
+.foot { background: #eeebf6; }
+@media(max-width: 600px) {
+  .top-in { flex-wrap: wrap; gap: 16px; }
+  .top-nav { width: 100%; justify-content: space-between; gap: 10px; font-size: 13px; }
+  .hero-in { padding-top: 38px; padding-bottom: 38px; }
+  .catalog-heading { align-items: start; flex-direction: column; }
+  .catalog-heading h2 { font-size: 26px; }
+  .grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+}
+@media(prefers-reduced-motion: reduce) { .prod { transition: none; } }
+
+/* Interacciones adaptadas de los botones presionables de HuellitaVet. */
+.theme-button { padding: 10px 14px; border: 1px solid var(--teal); border-radius: 12px; background: transparent; color: var(--ink); white-space: nowrap; }
+.btn, .chip, .cart-btn, .theme-button, .qty button {
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+@media (hover: hover) {
+  .btn:not(:disabled):hover, .chip:hover, .cart-btn:hover, .theme-button:hover, .qty button:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--teal);
+  }
+}
+.btn:not(:disabled):active, .chip:active, .cart-btn:active, .theme-button:active { transform: scale(.97); }
+button:disabled { cursor: not-allowed; }
+:where(button, a, input):focus-visible { outline: 3px solid var(--teal); outline-offset: 4px; }
+.prod-img img { width: 100%; height: 160px; object-fit: contain; }
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #171523; --ink: #f0edf9; --mut: #bbb5cf; --line: #464057;
+  --teal: #b9adff; --teal-d: #cfc6ff; --teal-l: #35304d; --mint: #302a47;
+  --red: #ffb4b4; --red-l: #492830; --amber: #f6d28e; --amber-l: #443824;
+  --green: #a6e3bd; --green-l: #243f34;
+}
+html[data-theme="dark"] :is(.top, .card, input, .chip, .qty button) { background: #242032; color: var(--ink); border-color: var(--line); }
+html[data-theme="dark"] :is(.hero, .foot, .prod-img, .check.demo) { background: #2b2540; border-color: var(--line); }
+html[data-theme="dark"] :is(.hero p, .hero-tags span) { color: var(--mut); }
+html[data-theme="dark"] .hero-tags span { background: #352d4b; border-color: var(--line); }
+html[data-theme="dark"] :is(.btn, .cart-btn, .chip.on) { background: #b9adff; color: #211a38 !important; }
+html[data-theme="dark"] .btn.sec { background: transparent; color: var(--ink) !important; border-color: var(--teal); }
+html[data-theme="dark"] .ok-box p { color: var(--green); }
+html[data-theme="dark"] .pill { background: #211a38; color: #f0edf9; }
+@media(max-width: 600px) { .top-nav { flex-wrap: wrap; justify-content: flex-start; } }
+@media(prefers-reduced-motion: reduce) {
+  .btn, .chip, .cart-btn, .theme-button, .qty button, .prod { transition: none; }
+  .btn:hover, .chip:hover, .cart-btn:hover, .theme-button:hover, .prod:hover { transform: none; }
+}
+
+/* Composición y movimiento inspirados en HuellitaVet. */
+:root { --ease-salida: cubic-bezier(.23,1,.32,1); }
+.hero { overflow: hidden; position: relative; }
+.hero-in { display: grid; grid-template-columns: 1.35fr 1fr; gap: 40px; align-items: center; }
+.hero h1 { line-height: 1.08; }
+.hero h1 span { display: inline-block; animation: entrar .8s var(--ease-salida) both; }
+.hero h1 .hero-accent { color: #6354b8; animation-delay: .12s; }
+.hero-in > div:first-child > p, .hero-tags, .hero-cta { animation: entrar .8s .2s var(--ease-salida) both; }
+.hero-cta { display: inline-flex; margin-top: 28px; gap: 30px; padding: 15px 24px; border-radius: 30px; text-decoration: none; }
+.hero-art { position: relative; height: 330px; display: grid; place-items: center; }
+.art-orbit { position: absolute; width: 285px; height: 285px; border-radius: 50%; border: 1px solid #a69bc9; box-shadow: 0 0 0 35px #ffffff24, 0 0 0 70px #ffffff18; }
+.art-cross { width: 190px; height: 190px; display: grid; place-items: center; font-size: 170px; line-height: 1; font-weight: 600; background: #fff; color: #7362c3; border-radius: 48px; transform: rotate(-12deg); box-shadow: 18px 24px 0 #c6bdec, 24px 35px 50px #453a8e25; animation: flotacion 6s ease-in-out infinite; }
+.art-label { position: absolute; bottom: 10px; right: 0; background: #fff; color: #453a8e; padding: 18px 24px; border-radius: 18px; box-shadow: 0 12px 30px #453a8e16; transform: rotate(-5deg); }
+.art-label span { margin-right: 8px; }
+.art-pill { position: absolute; top: 5px; right: 5px; width: 80px; height: 35px; border-radius: 30px; background: linear-gradient(90deg,#8272cf 50%,#fff 50%); transform: rotate(35deg); box-shadow: 0 8px 20px #453a8e20; }
+.art-dot { position: absolute; left: 0; bottom: 45px; width: 22px; height: 22px; border: 6px solid #a295db; border-radius: 50%; }
+.theme-button { display: inline-flex; align-items: center; gap: 8px; }
+.theme-symbol { display: inline-block; animation: giro .35s var(--ease-salida); }
+.top-nav a:not(.cart-btn) { position: relative; padding-bottom: 5px; }
+.top-nav a:not(.cart-btn)::after { content: ''; position: absolute; height: 2px; bottom: 0; left: 0; width: 100%; background: var(--teal); transform: scaleX(0); transform-origin: left; transition: transform .25s var(--ease-salida); }
+.top-nav a:hover::after, .top-nav a:focus-visible::after { transform: scaleX(1); }
+.prod { animation: entrar .65s var(--ease-salida) var(--entrada,0ms) backwards; position: relative; }
+.prod-img { overflow: hidden; }
+.prod-img img { transition: transform .45s var(--ease-salida); }
+.prod-tags { min-height: 28px; }
+.prod h3 { letter-spacing: -.4px; }
+.prod-bot .btn { border-radius: 30px; padding: 10px 18px; }
+.search { transition: box-shadow .2s, border-color .2s; }
+.search:focus { box-shadow: 0 0 0 5px var(--teal-l); }
+#catalogo { scroll-margin-top: 120px; }
+.toast { animation: entrar .35s var(--ease-salida) both; }
+@media (hover:hover) and (pointer:fine) {
+  .prod:hover { transform: translateY(-6px); border-color: var(--teal); box-shadow: 0 18px 40px #453a8e20; }
+  .prod:hover .prod-img img { transform: scale(1.07); }
+}
+html[data-theme="dark"] .hero h1 .hero-accent { color: #b9adff; }
+html[data-theme="dark"] .art-cross { background: #3f355c; color: #d5ccff; box-shadow: 18px 24px 0 #211b32, 24px 35px 50px #0003; }
+html[data-theme="dark"] .art-label { background: #39304d; color: #e6deff; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-new(root) { z-index: 1; }
+@keyframes entrar { from { opacity: 0; translate: 0 20px; } to { opacity: 1; translate: 0 0; } }
+@keyframes giro { from { opacity: 0; transform: rotate(-80deg) scale(.6); } to { opacity: 1; transform: rotate(0) scale(1); } }
+@keyframes flotacion { 0%,100% { transform: translateY(0) rotate(-12deg); } 50% { transform: translateY(-12px) rotate(-8deg); } }
+@media(max-width: 820px) { .hero-in { grid-template-columns: 1fr; } .hero-art { height: 250px; } .art-orbit { width: 220px; height: 220px; } .art-cross { width: 150px; height: 150px; font-size: 130px; } }
+@media(prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Logo proporcionado por Nova Salud. El encuadre oculta sus márgenes vacíos. */
+.brand-logo-frame { display: block; width: 230px; height: 66px; overflow: hidden; border-radius: 12px; position: relative; }
+.brand-logo { position: absolute; width: 250px; max-width: none; height: auto; left: -10px; top: -25px; }
+html[data-theme="dark"] .brand-logo-frame { background: #f4f1ff; }
+@media(max-width: 600px) { .brand-logo-frame { width: 210px; } .brand-logo { width: 230px; top: -22px; } }
