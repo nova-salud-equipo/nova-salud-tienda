@@ -1,8 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { api, money } from './api.js'
 import { useCarrito } from './carrito.jsx'
-import * as Ic from './iconos.jsx'
-import { Cursor, FondoFiguras, Scroll, useEfectos } from './efectos.jsx'
 
 const menosMovimiento = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -630,19 +628,6 @@ const PAGOS = [
   { v: 'Contra entrega', d: 'Pagas al recoger o al recibir tu pedido.', i: 'efectivo' },
 ]
 
-function Progreso({ paso }) {
-  const pasos = ['Carrito', 'Datos y pago', 'Confirmación']
-  return (
-    <ol className="progress" aria-label="Progreso de compra">
-      {pasos.map((s, i) => (
-        <li key={s} className={i < paso ? 'done' : i === paso ? 'on' : ''} aria-current={i === paso ? 'step' : undefined}>
-          <span>{i < paso ? <Ic.Check size={14} /> : i + 1}</span>{s}
-        </li>
-      ))}
-    </ol>
-  )
-}
-
 function Carrito() {
   const { items, cambiar, vaciar, total, unidades, agregar } = useCarrito()
   const ref = useRef(null)
@@ -704,7 +689,6 @@ function Carrito() {
       ir(`/pedido/${p.codigo}?c=${celular}&nuevo=1`)
     } catch (e2) { setError(e2.message) } finally { setEnviando(false) }
   }
-  const inv = (k) => t[k] && err[k]
 
   return (
     <div className="wrap page" ref={ref}>
