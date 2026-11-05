@@ -110,25 +110,28 @@ const OFERTAS = 'Ofertas'
 const ORDENES = { rel: 'Más relevantes', asc: 'Menor precio', desc: 'Mayor precio', az: 'Nombre (A-Z)' }
 
 function Catalogo() {
-  const { agregar, items, sincronizar } = useCarrito()
+  const { agregar, items, sincronizar, alergiaAine, setAlergiaAine } = useCarrito()
   const [prods, setProds] = useState(null)
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
   const [cat, setCat] = useState('Todas')
   const [orden, setOrden] = useState('rel')
-  const [aviso, setAviso] = useState('')
+  const [ocultarAine, setOcultarAine] = useState(false)
+  const [aviso, setAviso] = useState(null) // { t: texto, warn: true si es advertencia }
   const cargar = () => api('/catalogo/productos').then((d) => { setProds(d); sincronizar(d); setError('') }).catch((e) => setError(e.message))
   useEffect(() => { cargar() }, [])
-  useEffect(() => { if (!aviso) return; const t = setTimeout(() => setAviso(''), 2500); return () => clearTimeout(t) }, [aviso])
+  useEffect(() => { if (!aviso) return; const t = setTimeout(() => setAviso(null), aviso.warn ? 5000 : 2500); return () => clearTimeout(t) }, [aviso])
   const cats = useMemo(() => ['Todas', ...((prods || []).some((p) => p.enPromocion) ? [OFERTAS] : []), ...new Set((prods || []).map((p) => p.categoria))], [prods])
   const lista = useMemo(() => {
     const t = q.trim().toLowerCase()
-    const xs = (prods || []).filter((p) => (cat === 'Todas' || p.categoria === cat || (cat === OFERTAS && p.enPromocion)) && (!t || p.nombre.toLowerCase().includes(t)))
+    const xs = (prods || []).filter((p) => (cat === 'Todas' || p.categoria === cat || (cat === OFERTAS && p.enPromocion)) && (!t || p.nombre.toLowerCase().includes(t)) &&
+      !(alergiaAine && ocultarAine && p.contieneAine))
     if (orden === 'asc') xs.sort((a, b) => a.precioFinal - b.precioFinal)
     else if (orden === 'desc') xs.sort((a, b) => b.precioFinal - a.precioFinal)
     else if (orden === 'az') xs.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
     return xs
-  }, [prods, q, cat, orden])
+  }, [prods, q, cat, orden, alergiaAine, ocultarAine])
+  const ocultos = alergiaAine && ocultarAine ? (prods || []).filter((p) => p.contieneAine).length : 0
   const promos = (prods || []).filter((p) => p.enPromocion && !p.agotado)
 
   return (
@@ -199,7 +202,14 @@ function Catalogo() {
           <div className="chips" role="group" aria-label="Categorías">
             {cats.map((c) => <button key={c} className={'chip' + (cat === c ? ' on' : '')} aria-pressed={cat === c} onClick={() => setCat(c)}>{c}</button>)}
           </div>
-          {prods && <p className="muted s">{lista.length} {lista.length === 1 ? 'producto' : 'productos'}{cat !== 'Todas' && ` en ${cat}`}</p>}
+          <div className={'alergia' + (alergiaAine ? ' on' : '')}>
+            <label className="check">
+              <input type="checkbox" checked={alergiaAine} onChange={(e) => setAlergiaAine(e.target.checked)} />
+              <span><b><Ic.Alerta size={15} /> Soy alérgico/a a los AINEs</b><small>Ibuprofeno, naproxeno, aspirina, diclofenaco y otros antiinflamatorios. Te avisaremos en cada producto que los contenga.</small></span>
+            </label>
+            {alergiaAine && <label className="check sub"><input type="checkbox" checked={ocultarAine} onChange={(e) => setOcultarAine(e.target.checked)} /> Ocultar los productos con AINE</label>}
+          </div>
+          {prods && <p className="muted s">{lista.length} {lista.length === 1 ? 'producto' : 'productos'}{cat !== 'Todas' && ` en ${cat}`}{ocultos > 0 && ` · ${ocultos} con AINE ocultos`}</p>}
         </div>
 
         {error && <div className="empty"><span className="empty-ico red"><Ic.Alerta size={28} /></span><b>No pudimos cargar el catálogo</b><p className="muted">{error}</p><button className="btn sec" onClick={cargar}>Reintentar</button></div>}
@@ -211,8 +221,9 @@ function Catalogo() {
             const enCarrito = items.find((i) => i.id === p.id)?.cant || 0
             const lleno = enCarrito >= p.disponible
             const { Icono, color } = Ic.temaCategoria(p.categoria)
+            const riesgo = alergiaAine && p.contieneAine
             return (
-              <article key={p.id} className={'card prod tilt' + (p.agotado ? ' off' : '')} data-reveal style={{ '--i': n % 4 }}>
+              <article key={p.id} className={'card prod tilt' + (p.agotado ? ' off' : '') + (riesgo ? ' riesgo' : '')} data-reveal style={{ '--i': n % 4 }}>
                 <div className={'prod-img ' + color} aria-hidden="true">
                   <Icono size={46} strokeWidth={1.5} />
                   <div className="prod-tags">
@@ -224,13 +235,15 @@ function Catalogo() {
                 <h3>{p.nombre}</h3>
                 <p className="muted s">{p.presentacion}</p>
                 <div className="prod-flags">
+                  {p.contieneAine && <span className="tag red" title="Antiinflamatorio no esteroideo"><Ic.Alerta size={12} /> Contiene AINE</span>}
                   {p.requiereReceta && <span className="tag amber"><Ic.Receta size={12} /> Requiere receta</span>}
                   {!p.agotado && p.disponible <= 5 && <span className="tag red">¡Últimas {p.disponible}!</span>}
                 </div>
+                {riesgo && <p className="aine-aviso" role="note"><Ic.Alerta size={15} /> No recomendado: indicaste que eres alérgico/a a los AINEs.</p>}
                 <div className="prod-bot">
                   <div className="price">{p.enPromocion && <s>{money(p.precio)}</s>}<b>{money(p.precioFinal)}</b></div>
                   {!p.agotado && (
-                    <button className={'btn add' + (enCarrito ? ' in' : '')} disabled={lleno} onClick={() => { agregar(p); setAviso(`${p.nombre} agregado al carrito`) }} aria-label={`Agregar ${p.nombre} al carrito`}>
+                    <button className={'btn add' + (enCarrito ? ' in' : '')} disabled={lleno} onClick={() => { agregar(p); setAviso(riesgo ? { t: `${p.nombre} contiene un AINE y marcaste que eres alérgico/a. Consulta con el químico farmacéutico antes de consumirlo.`, warn: true } : { t: `${p.nombre} agregado al carrito` }) }} aria-label={`Agregar ${p.nombre} al carrito`}>
                       {lleno ? 'Máximo' : enCarrito ? <><Ic.Check size={16} /> {enCarrito}</> : <><Ic.Mas size={16} /> Agregar</>}
                     </button>
                   )}
@@ -266,7 +279,7 @@ function Catalogo() {
         </div>
       </section>
 
-      {aviso && <div className="toast" role="status"><Ic.Check size={18} /> <span>{aviso}</span> <a href="#/carrito">Ver carrito</a></div>}
+      {aviso && <div className={'toast' + (aviso.warn ? ' warn' : '')} role={aviso.warn ? 'alert' : 'status'}>{aviso.warn ? <Ic.Alerta size={18} /> : <Ic.Check size={18} />} <span>{aviso.t}</span> <a href="#/carrito">Ver carrito</a></div>}
     </>
   )
 }
@@ -291,13 +304,14 @@ function Progreso({ paso }) {
 }
 
 function Carrito() {
-  const { items, cambiar, vaciar, total, unidades } = useCarrito()
+  const { items, cambiar, vaciar, total, unidades, alergiaAine, setAlergiaAine } = useCarrito()
   const [f, setF] = useState({ nombre: '', celular: '', entrega: 'recojo', direccion: '', metodoPago: 'Yape / Plin', simularFallo: false })
   const [t, setT] = useState({})
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   const set = (k, v) => { setF({ ...f, [k]: v }); setError('') }
   const conReceta = items.some((i) => i.receta)
+  const conAine = items.filter((i) => i.aine)
   const delivery = f.entrega === 'delivery' ? 5 : 0
   const err = {
     nombre: f.nombre.trim().length < 2 ? 'Escribe tu nombre.' : '',
@@ -371,7 +385,7 @@ function Carrito() {
           <div className="lines">
             {items.map((i) => (
               <div key={i.id} className="line">
-                <div className="line-info"><b>{i.nombre}</b><small>{i.presentacion} · {money(i.precio)} c/u</small>{i.receta && <span className="tag amber"><Ic.Receta size={12} /> Receta</span>}</div>
+                <div className="line-info"><b>{i.nombre}</b><small>{i.presentacion} · {money(i.precio)} c/u</small>{(i.receta || i.aine) && <span className="line-tags">{i.aine && <span className="tag red"><Ic.Alerta size={12} /> Contiene AINE</span>}{i.receta && <span className="tag amber"><Ic.Receta size={12} /> Receta</span>}</span>}</div>
                 <div className="line-act">
                   <div className="qty">
                     <button type="button" onClick={() => cambiar(i.id, i.cant - 1)} aria-label={'Quitar uno de ' + i.nombre}>{i.cant === 1 ? <Ic.Basura size={15} /> : <Ic.Menos size={15} />}</button>
@@ -383,6 +397,9 @@ function Carrito() {
               </div>
             ))}
           </div>
+          {conAine.length > 0 && (alergiaAine
+            ? <div className="alert sm" role="alert"><Ic.Alerta size={16} /> <span>Indicaste que eres alérgico/a a los AINEs y tu carrito tiene {conAine.map((i) => i.nombre).join(', ')}. Te recomendamos retirarlos o consultar con nuestro químico farmacéutico.</span></div>
+            : <p className="nota"><Ic.Alerta size={16} /> <span>{conAine.length === 1 ? 'Un producto contiene' : 'Algunos productos contienen'} AINEs (antiinflamatorios). No los consumas si eres alérgico/a. <button type="button" className="link" onClick={() => setAlergiaAine(true)}>Soy alérgico/a</button></span></p>)}
           {conReceta && <p className="nota"><Ic.Info size={16} /> Algunos productos requieren receta médica. Preséntala al recoger tu pedido en la botica.</p>}
           <div className="totals">
             <div><span>Subtotal</span><span>{money(total)}</span></div>
@@ -456,7 +473,7 @@ function Seguimiento({ codigo: codInicial = '', celularInicial = '', recien = fa
             </ol>
           )}
           <div className="lines">
-            {pedido.items.map((i) => <div key={i.productoId} className="line simple"><span>{i.cantidad} × {i.nombre}</span><b>{money(i.cantidad * i.precio)}</b></div>)}
+            {pedido.items.map((i) => <div key={i.productoId} className="line simple"><span>{i.cantidad} × {i.nombre}{i.contieneAine && <> <span className="tag red"><Ic.Alerta size={12} /> AINE</span></>}</span><b>{money(i.cantidad * i.precio)}</b></div>)}
             <div className="line simple grand"><span>Total</span><b>{money(pedido.total)}</b></div>
           </div>
           <div className="meta">
