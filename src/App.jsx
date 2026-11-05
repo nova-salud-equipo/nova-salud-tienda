@@ -97,7 +97,7 @@ export default function App() {
   }, [])
 
   let pagina
-  if (ruta.startsWith('/carrito')) pagina = <Carrito />
+  if (ruta.startsWith('/carrito')) pagina = <Carrito faltan={new URLSearchParams(ruta.split('?')[1]).get('faltan') || ''} />
   else if (ruta.startsWith('/pedido/')) { const [cod, qs] = ruta.slice(8).split('?'); pagina = <Seguimiento key={cod} codigo={decodeURIComponent(cod)} celularInicial={new URLSearchParams(qs).get('c') || ''} recien={new URLSearchParams(qs).get('nuevo') === '1'} /> }
   else if (ruta.startsWith('/seguimiento')) pagina = <Seguimiento />
   else pagina = <Portada seccion={SECCIONES[ruta]} listo={intro !== 'on'} />
@@ -190,19 +190,38 @@ function Intro({ onVuelo, onFin }) {
 /* ---------- Portada ---------- */
 const ORDEN = { rel: 'Recomendados', asc: 'Menor precio', desc: 'Mayor precio', az: 'De la A a la Z' }
 
+// Búsqueda que ignora tildes y mayúsculas, y también mira la categoría y la presentación.
+const sinTildes = (s = '') => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+const coincide = (p, q) => {
+  if (!q) return true
+  const texto = sinTildes(`${p.nombre} ${p.categoria} ${p.presentacion}`)
+  return sinTildes(q).split(/\s+/).every((palabra) => texto.includes(palabra))
+}
+
+// Filtros rápidos del catálogo (se pueden combinar).
+const FILTROS = [
+  { k: 'ofertas', t: 'Ofertas', ok: (p) => p.enPromocion },
+  { k: 'stock', t: 'Disponibles', ok: (p) => !p.agotado },
+  { k: 'libre', t: 'Sin receta', ok: (p) => !p.requiereReceta },
+  { k: 'favs', t: 'Mis favoritos', ok: (p, favs) => favs.includes(p.id) },
+]
+
 function Portada({ seccion, listo }) {
   const ref = useRef(null)
   const cruzRef = useRef(null)
-  const { agregar, cambiar, items, sincronizar } = useCarrito()
+  const { agregar, cambiar, items, sincronizar, unidades, total, alergiaAine, setAlergiaAine, favoritos, esFavorito, alternarFavorito } = useCarrito()
   const [prods, setProds] = useState(null)
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
   const [cat, setCat] = useState('Todas')
   const [orden, setOrden] = useState('rel')
-  const [aviso, setAviso] = useState({ txt: '', n: 0 })
+  const [filtros, setFiltros] = useState([]) // claves de FILTROS activas
+  const [ocultarAine, setOcultarAine] = useState(false)
+  const [ficha, setFicha] = useState(null) // producto abierto en la ficha
+  const [aviso, setAviso] = useState({ txt: '', n: 0, warn: false })
   const cargar = () => { setError(''); return api('/catalogo/productos').then((d) => { setProds(d); sincronizar(d) }).catch((e) => setError(e.message)) }
   useEffect(() => { cargar() }, [])
-  useEffect(() => { if (!aviso.txt) return; const t = setTimeout(() => setAviso((a) => ({ ...a, txt: '' })), 2800); return () => clearTimeout(t) }, [aviso.n])
+  useEffect(() => { if (!aviso.txt) return; const t = setTimeout(() => setAviso((a) => ({ ...a, txt: '' })), aviso.warn ? 6000 : 2800); return () => clearTimeout(t) }, [aviso.n])
   useEffect(() => { if (seccion && listo) requestAnimationFrame(() => irA(seccion)) }, [seccion, listo])
   useReveal(ref, listo, [!!prods])
 
@@ -218,19 +237,27 @@ function Portada({ seccion, listo }) {
 
   const cats = useMemo(() => ['Todas', ...new Set((prods || []).map((p) => p.categoria))], [prods])
   const conteo = useMemo(() => (prods || []).reduce((m, p) => ({ ...m, [p.categoria]: (m[p.categoria] || 0) + 1 }), {}), [prods])
-  const t = q.trim().toLowerCase()
+  const t = q.trim()
+  const ocultandoAine = alergiaAine && ocultarAine
   const lista = useMemo(() => {
-    const l = (prods || []).filter((p) => (cat === 'Todas' || p.categoria === cat) && (!t || p.nombre.toLowerCase().includes(t)))
+    const l = (prods || []).filter((p) => (cat === 'Todas' || p.categoria === cat) && coincide(p, t) && FILTROS.every((f) => !filtros.includes(f.k) || f.ok(p, favoritos)) && !(ocultandoAine && p.contieneAine))
     if (orden === 'asc') return [...l].sort((a, b) => a.precioFinal - b.precioFinal)
     if (orden === 'desc') return [...l].sort((a, b) => b.precioFinal - a.precioFinal)
     if (orden === 'az') return [...l].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
     return l
-  }, [prods, t, cat, orden])
+  }, [prods, t, cat, orden, filtros, favoritos, ocultandoAine])
   const promos = (prods || []).filter((p) => p.enPromocion && !p.agotado)
-  const sugeridos = t && prods ? prods.filter((p) => p.nombre.toLowerCase().includes(t)).slice(0, 3) : []
-  const sumar = (p, e) => { agregar(p); volarAlCarrito(e?.currentTarget); setAviso((a) => ({ txt: `${p.nombre} agregado`, n: a.n + 1 })) }
+  const sugeridos = t && prods ? prods.filter((p) => coincide(p, t)).slice(0, 3) : []
+  const ocultosAine = ocultandoAine ? (prods || []).filter((p) => p.contieneAine).length : 0
+  const sumar = (p, e) => {
+    agregar(p); volarAlCarrito(e?.currentTarget)
+    const riesgo = alergiaAine && p.contieneAine
+    setAviso((a) => ({ txt: riesgo ? `${p.nombre} contiene un AINE y marcaste que eres alérgico/a. Consulta con el químico farmacéutico antes de tomarlo.` : `${p.nombre} agregado`, n: a.n + 1, warn: riesgo }))
+  }
   const enCarrito = (id) => items.find((i) => i.id === id)?.cant || 0
-  const limpiar = () => { setQ(''); setCat('Todas') }
+  const alternarFiltro = (k) => setFiltros((fs) => (fs.includes(k) ? fs.filter((f) => f !== k) : [...fs, k]))
+  const hayFiltros = cat !== 'Todas' || t || filtros.length > 0
+  const limpiar = () => { setQ(''); setCat('Todas'); setFiltros([]) }
 
   return (
     <div ref={ref}>
@@ -375,14 +402,29 @@ function Portada({ seccion, listo }) {
             <input id="buscar" name="q" type="search" className="search" placeholder="Buscar por nombre…" value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" />
           </div>
           <p className="tb-estado" aria-live="polite">
-            {prods && <><b>{cat === 'Todas' ? 'Todos los productos' : cat}</b><span className="num"> · {lista.length} {lista.length === 1 ? 'resultado' : 'resultados'}</span></>}
-            {(cat !== 'Todas' || t) && <button type="button" className="tb-limpiar" onClick={limpiar}>Quitar filtros <span aria-hidden="true">×</span></button>}
+            {prods && <><b>{cat === 'Todas' ? 'Todos los productos' : cat}</b><span className="num"> · {lista.length} {lista.length === 1 ? 'resultado' : 'resultados'}{ocultosAine > 0 && ` · ${ocultosAine} con AINE ocultos`}</span></>}
+            {hayFiltros && <button type="button" className="tb-limpiar" onClick={limpiar}>Quitar filtros <span aria-hidden="true">×</span></button>}
           </p>
           <label className="orden"><span className="sr">Ordenar</span>
             <select name="orden" value={orden} onChange={(e) => setOrden(e.target.value)}>
               {Object.entries(ORDEN).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </label>
+          <div className="filtros" role="group" aria-label="Filtros rápidos">
+            {FILTROS.map((f) => (
+              <button key={f.k} type="button" className={'chip' + (filtros.includes(f.k) ? ' on' : '')} aria-pressed={filtros.includes(f.k)} onClick={() => alternarFiltro(f.k)}>
+                {f.k === 'favs' && <Ico n="corazon" />}{f.t}{f.k === 'favs' && favoritos.length > 0 && <span className="chip-n num">{favoritos.length}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className={'alergia' + (alergiaAine ? ' on' : '')}>
+          <label className="check">
+            <input type="checkbox" checked={alergiaAine} onChange={(e) => { setAlergiaAine(e.target.checked); if (!e.target.checked) setOcultarAine(false) }} />
+            <span><b><Ico n="alerta" />Soy alérgico/a a los AINEs</b><small>Ibuprofeno, naproxeno, aspirina, diclofenaco y otros antiinflamatorios. Te avisaremos en cada producto que los contenga.</small></span>
+          </label>
+          {alergiaAine && <label className="check sub aparece"><input type="checkbox" checked={ocultarAine} onChange={(e) => setOcultarAine(e.target.checked)} />Ocultar los productos con AINE</label>}
         </div>
 
         {error && (
@@ -404,8 +446,8 @@ function Portada({ seccion, listo }) {
           <div className="estado">
             <Cruz className="estado-cross" />
             <div>
-              <h3>{t ? `No encontramos “${q.trim()}”` : 'No hay productos en esta categoría'}</h3>
-              <p>Prueba con otro nombre o revisa todas las categorías.</p>
+              <h3>{t ? `No encontramos “${t}”` : filtros.includes('favs') && !favoritos.length ? 'Todavía no tienes favoritos' : 'No hay productos con estos filtros'}</h3>
+              <p>{filtros.includes('favs') && !favoritos.length ? 'Toca el corazón de un producto para guardarlo aquí y encontrarlo rápido la próxima vez.' : 'Prueba con otro nombre o quita algunos filtros.'}</p>
               <button className="btn sec" onClick={limpiar}>Ver todo el catálogo</button>
             </div>
           </div>
@@ -414,22 +456,20 @@ function Portada({ seccion, listo }) {
           <div className="grid" key={cat + t + orden}>
             {lista.map((p, i) => {
               const cant = enCarrito(p.id)
+              const riesgo = alergiaAine && p.contieneAine
               return (
-                <article key={p.id} className={'card' + (p.agotado ? ' off' : '') + (cant ? ' en' : '')} style={{ '--k': Math.min(i, 12) }}>
+                <article key={p.id} className={'card' + (p.agotado ? ' off' : '') + (cant ? ' en' : '') + (riesgo ? ' riesgo' : '')} style={{ '--k': Math.min(i, 12) }}>
                   <div className="card-media">
-                    <FotoProducto p={p} />
-                    <div className="badges">
-                      {p.enPromocion && <span className="badge oferta">−20%</span>}
-                      {p.requiereReceta && <span className="badge receta">Con receta</span>}
-                      {!p.agotado && p.disponible <= 5 && <span className="badge ultimas">Últimas {p.disponible}</span>}
-                      {p.agotado && <span className="badge agotado">Agotado</span>}
-                    </div>
+                    <button type="button" className="card-abrir" onClick={() => setFicha(p)} aria-label={`Ver detalles de ${p.nombre}`}><FotoProducto p={p} /></button>
+                    <Badges p={p} />
+                    <BotonFavorito activo={esFavorito(p.id)} nombre={p.nombre} onClick={() => alternarFavorito(p.id)} />
                   </div>
                   <div className="card-body">
                     <span className="card-cat">{p.categoria}</span>
-                    <h3>{p.nombre}</h3>
+                    <h3><button type="button" className="card-tit" onClick={() => setFicha(p)}>{p.nombre}</button></h3>
                     <p className="soft">{p.presentacion}</p>
                     {p.requiereReceta && <p className="card-nota">Solo recojo en tienda, con tu receta.</p>}
+                    {riesgo && <p className="aine-aviso" role="note"><Ico n="alerta" />No recomendado: indicaste que eres alérgico/a a los AINEs.</p>}
                   </div>
                   <div className="card-foot">
                     <span className="price num">{p.enPromocion && <s>{money(p.precio)}</s>}<b>{money(p.precioFinal)}</b></span>
@@ -452,12 +492,106 @@ function Portada({ seccion, listo }) {
       {/* Seguir pedido */}
       <section className="seguir wrap" id="seguir" aria-labelledby="seg-t">
         <CuponSeguir />
+        <PedidosRecientes />
       </section>
 
-      <div className={'toast' + (aviso.txt ? ' show' : '')} role="status" aria-live="polite">
-        {aviso.txt && <><Cruz className="toast-cross" /><span>{aviso.txt}</span><a href="#/carrito">Ver carrito</a></>}
+      {/* En el celular: barra fija con el total del carrito */}
+      <a href="#/carrito" className={'barra-carrito' + (unidades ? ' on' : '')} aria-hidden={!unidades} tabIndex={unidades ? 0 : -1}>
+        <span className="num"><b>{unidades}</b> {unidades === 1 ? 'producto' : 'productos'} · {money(total)}</span>
+        <span>Ver carrito <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg></span>
+      </a>
+      <div className={'toast' + (aviso.txt ? ' show' : '') + (aviso.warn ? ' warn' : '')} role={aviso.warn ? 'alert' : 'status'} aria-live="polite">
+        {aviso.txt && <>{aviso.warn ? <Ico n="alerta" className="ico toast-ico" /> : <Cruz className="toast-cross" />}<span>{aviso.txt}</span><a href="#/carrito">Ver carrito</a></>}
       </div>
+
+      {ficha && <FichaProducto p={ficha} prods={prods || []} cant={enCarrito(ficha.id)} onAdd={sumar} onCambiar={cambiar} onAbrir={setFicha} onCerrar={() => setFicha(null)} />}
     </div>
+  )
+}
+
+function Badges({ p }) {
+  return (
+    <div className="badges">
+      {p.enPromocion && <span className="badge oferta">−20%</span>}
+      {p.requiereReceta && <span className="badge receta">Con receta</span>}
+      {p.contieneAine && <span className="badge aine" title="Antiinflamatorio no esteroideo">Contiene AINE</span>}
+      {!p.agotado && p.disponible <= 5 && <span className="badge ultimas">Últimas {p.disponible}</span>}
+      {p.agotado && <span className="badge agotado">Agotado</span>}
+    </div>
+  )
+}
+
+function BotonFavorito({ activo, nombre, onClick, grande }) {
+  return (
+    <button type="button" className={'fav' + (activo ? ' on' : '') + (grande ? ' grande' : '')} onClick={onClick} aria-pressed={activo} aria-label={activo ? `Quitar ${nombre} de favoritos` : `Guardar ${nombre} en favoritos`}>
+      <Ico n="corazon" />
+    </button>
+  )
+}
+
+// Ficha del producto: foto grande, todos sus datos y otros productos de la misma categoría.
+function FichaProducto({ p, prods, cant, onAdd, onCambiar, onAbrir, onCerrar }) {
+  const ref = useRef(null)
+  const { alergiaAine, esFavorito, alternarFavorito } = useCarrito()
+  const actual = prods.find((x) => x.id === p.id) || p
+  const relacionados = prods.filter((x) => x.categoria === actual.categoria && x.id !== actual.id && !x.agotado).slice(0, 3)
+  useEffect(() => {
+    const d = ref.current
+    if (!d.open) d.showModal()
+    document.documentElement.classList.add('sin-scroll')
+    return () => document.documentElement.classList.remove('sin-scroll')
+  }, [])
+  useEffect(() => { ref.current?.querySelector('.ficha-in')?.scrollTo(0, 0) }, [actual.id])
+  const riesgo = alergiaAine && actual.contieneAine
+  return (
+    <dialog ref={ref} className="ficha" aria-labelledby="ficha-t" onClose={onCerrar} onClick={(e) => { if (e.target === ref.current) ref.current.close() }}>
+      <div className="ficha-in">
+        <button type="button" className="ficha-cerrar" onClick={() => ref.current.close()} aria-label="Cerrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button>
+        <div className="ficha-media">
+          <FotoProducto key={actual.id} p={actual} />
+          <Badges p={actual} />
+        </div>
+        <div className="ficha-info">
+          <span className="card-cat">{actual.categoria}</span>
+          <h2 id="ficha-t">{actual.nombre}</h2>
+          <p className="soft">{actual.presentacion}</p>
+          <div className="ficha-precio num">
+            {actual.enPromocion && <s>{money(actual.precio)}</s>}<b>{money(actual.precioFinal)}</b>
+            {actual.enPromocion && <span className="ficha-ahorro">Ahorras {money(actual.precio - actual.precioFinal)}</span>}
+          </div>
+          <ul className="ficha-datos">
+            <li><Ico n={actual.agotado ? 'reloj' : 'check'} />{actual.agotado ? 'Agotado por ahora' : actual.disponible <= 5 ? `Quedan solo ${actual.disponible} unidades` : 'Disponible en tienda'}</li>
+            <li><Ico n="tienda" />{actual.requiereReceta ? 'Requiere receta: solo recojo en tienda' : 'Recojo en 30 min o delivery hoy'}</li>
+            <li><Ico n="celular" />Precio con IGV, igual que en mostrador</li>
+          </ul>
+          {actual.contieneAine && <p className={riesgo ? 'aine-aviso' : 'nota'} role="note"><Ico n="alerta" />{riesgo ? 'No recomendado: indicaste que eres alérgico/a a los AINEs. Consulta con el químico farmacéutico.' : 'Contiene un AINE (antiinflamatorio). No lo tomes si eres alérgico/a.'}</p>}
+          <div className="ficha-acc">
+            {!actual.agotado && (cant
+              ? <div className="stepper" role="group" aria-label={`Cantidad de ${actual.nombre}`}>
+                  <button type="button" onClick={() => onCambiar(actual.id, cant - 1)} aria-label={(cant === 1 ? 'Quitar ' : 'Quitar uno de ') + actual.nombre}>−</button>
+                  <span className="num" aria-live="polite">{cant}</span>
+                  <button type="button" onClick={(e) => onAdd(actual, e)} disabled={cant >= actual.disponible} aria-label={'Agregar uno de ' + actual.nombre}>+</button>
+                </div>
+              : <BotonAgregar p={actual} cant={0} onAdd={onAdd} />)}
+            <BotonFavorito activo={esFavorito(actual.id)} nombre={actual.nombre} onClick={() => alternarFavorito(actual.id)} grande />
+            {cant > 0 && <a href="#/carrito" className="link" onClick={() => ref.current.close()}>Ir al carrito</a>}
+          </div>
+        </div>
+        {relacionados.length > 0 && (
+          <section className="ficha-rel" aria-labelledby="rel-t">
+            <h3 id="rel-t">También en {actual.categoria}</h3>
+            <div className="ficha-rel-grid">
+              {relacionados.map((r) => (
+                <button key={r.id} type="button" className="rel" onClick={() => onAbrir(r)}>
+                  <FotoProducto p={r} chica />
+                  <span><b>{r.nombre}</b><small className="num">{money(r.precioFinal)}</small></span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </dialog>
   )
 }
 
@@ -588,6 +722,9 @@ const ICOS = {
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
   reloj: <><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></>,
   pin: <path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />,
+  corazon: <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z" />,
+  alerta: <path d="M12 4 2.8 19.5h18.4zM12 10v4.5M12 17v.01" />,
+  repetir: <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7" />,
 }
 const Ico = ({ n, ...p }) => <svg className="ico" viewBox="0 0 24 24" aria-hidden="true" {...p}>{ICOS[n]}</svg>
 function IconoCat({ cat }) {
@@ -629,8 +766,8 @@ const PAGOS = [
   { v: 'Contra entrega', d: 'Pagas al recoger o al recibir tu pedido.', i: 'efectivo' },
 ]
 
-function Carrito() {
-  const { items, cambiar, vaciar, total, unidades, agregar } = useCarrito()
+function Carrito({ faltan = '' }) {
+  const { items, cambiar, vaciar, total, unidades, agregar, alergiaAine, setAlergiaAine, recordarPedido } = useCarrito()
   const ref = useRef(null)
   const [f, setF] = useState({ nombre: '', celular: '', entrega: 'recojo', direccion: '', metodoPago: 'Yape / Plin', simularFallo: false })
   const [t, setT] = useState({})
@@ -641,6 +778,7 @@ function Carrito() {
   useEffect(() => { if (!items.length) api('/catalogo/productos').then((d) => setSugeridos(d.filter((p) => !p.agotado).slice(0, 4))).catch(() => {}) }, [items.length === 0])
   const set = (k, v) => { setF({ ...f, [k]: v }); setError('') }
   const conReceta = items.some((i) => i.receta)
+  const conAine = items.filter((i) => i.aine)
   const delivery = f.entrega === 'delivery' ? 5 : 0
   const err = {
     nombre: f.nombre.trim().length < 2 ? 'Escribe tu nombre.' : '',
@@ -687,6 +825,7 @@ function Carrito() {
       const celular = f.celular.replace(/\D/g, '')
       const p = await api('/pedidos', { method: 'POST', body: { items: items.map((i) => ({ productoId: i.id, cantidad: i.cant })), cliente: { nombre: f.nombre.trim(), celular }, metodoPago: f.metodoPago, entrega: f.entrega, direccion: f.direccion.trim(), simularFallo: f.simularFallo } })
       vaciar()
+      recordarPedido({ codigo: p.codigo, celular, total: total + delivery, fecha: new Date().toISOString() })
       ir(`/pedido/${p.codigo}?c=${celular}&nuevo=1`)
     } catch (e2) { setError(e2.message) } finally { setEnviando(false) }
   }
@@ -698,6 +837,7 @@ function Carrito() {
         <h1 className="words" data-r="words"><Palabras texto="Tu carrito" /></h1>
         <span className="soft num">{unidades} {unidades === 1 ? 'producto' : 'productos'}</span>
       </div>
+      {faltan && <p className="nota faltan" role="status">Agregamos tu pedido anterior. No están disponibles ahora: {faltan}.</p>}
       <div className="checkout">
         <section className="lineas" aria-label="Productos en tu carrito">
           {items.map((i, k) => (
@@ -707,6 +847,7 @@ function Carrito() {
                 <b>{i.nombre}</b>
                 <small>{i.presentacion} · {money(i.precio)} c/u</small>
                 {i.receta && <small className="n-receta">Requiere receta · solo recojo</small>}
+                {i.aine && <small className="n-aine"><Ico n="alerta" />Contiene AINE</small>}
               </div>
               <div className="stepper">
                 <button type="button" onClick={() => cambiar(i.id, i.cant - 1)} aria-label={(i.cant === 1 ? 'Quitar ' : 'Quitar uno de ') + i.nombre}>−</button>
@@ -717,6 +858,9 @@ function Carrito() {
               <button type="button" className="quitar" onClick={() => cambiar(i.id, 0)} aria-label={'Quitar ' + i.nombre + ' del carrito'}><Ico n="borrar" /></button>
             </div>
           ))}
+          {conAine.length > 0 && (alergiaAine
+            ? <div className="aine-aviso grande" role="alert"><Ico n="alerta" /><span>Indicaste que eres alérgico/a a los AINEs y tu carrito tiene {conAine.map((i) => i.nombre).join(', ')}. Te recomendamos retirarlos o consultar con nuestro químico farmacéutico.</span></div>
+            : <p className="nota"><Ico n="alerta" /><span>{conAine.length === 1 ? 'Un producto contiene' : 'Algunos productos contienen'} AINEs (antiinflamatorios). No los tomes si eres alérgico/a. <button type="button" className="link" onClick={() => setAlergiaAine(true)}>Soy alérgico/a</button></span></p>)}
           {conReceta && <p className="nota">Algunos productos requieren receta médica. Preséntala al recoger tu pedido en la botica.</p>}
           <div className="ventajas" data-r>
             <span><Ico n="reloj" />Listo en 30 minutos</span>
@@ -780,8 +924,29 @@ function Seguimiento({ codigo: codInicial = '', celularInicial = '', recien = fa
   }
   const [error, setError] = useState('')
   const [actualizado, setActualizado] = useState(null)
+  const { recordarPedido, agregar } = useCarrito()
+  const [repetir, setRepetir] = useState({ cargando: false, msg: '' })
   const consultar = async (cod, cel) => {
-    try { setPedido(await api(`/pedidos/seguimiento/${encodeURIComponent(normalizarCodigo(cod))}?celular=${cel.replace(/\D/g, '')}`)); setError(''); setActualizado(new Date()) } catch (e) { setError(e.message); setPedido(null) }
+    try {
+      const d = await api(`/pedidos/seguimiento/${encodeURIComponent(normalizarCodigo(cod))}?celular=${cel.replace(/\D/g, '')}`)
+      setPedido(d); setError(''); setActualizado(new Date())
+      recordarPedido({ codigo: d.codigo, celular: cel.replace(/\D/g, ''), total: d.total })
+    } catch (e) { setError(e.message); setPedido(null) }
+  }
+  // Vuelve a poner en el carrito los productos de este pedido que sigan disponibles.
+  const volverAPedir = async () => {
+    setRepetir({ cargando: true, msg: '' })
+    try {
+      const cat = await api('/catalogo/productos')
+      const faltan = []
+      pedido.items.forEach((i) => {
+        const p = cat.find((c) => c.id === i.productoId)
+        if (!p || p.agotado) faltan.push(i.nombre)
+        else agregar(p, i.cantidad)
+      })
+      if (faltan.length === pedido.items.length) setRepetir({ cargando: false, msg: 'Ninguno de estos productos está disponible ahora.' })
+      else ir('/carrito' + (faltan.length ? '?faltan=' + encodeURIComponent(faltan.join(', ')) : ''))
+    } catch (e) { setRepetir({ cargando: false, msg: e.message }) }
   }
   useEffect(() => { if (codInicial && celularInicial) consultar(codInicial, celularInicial) }, [codInicial, celularInicial])
   // Mientras el pedido esté en curso, el estado se actualiza solo cada 8 s.
@@ -796,6 +961,7 @@ function Seguimiento({ codigo: codInicial = '', celularInicial = '', recien = fa
   if (!codInicial || (error && !pedido)) return (
     <div className="wrap page" ref={ref}>
       <CuponSeguir titulo="h1" codigo={codInicial} celular={celularInicial} error={error} key={error} />
+      <PedidosRecientes />
       <div className="ayuda" data-r style={{ '--i': 1 }}>
         <div><Ico n="caja" /><p><b>¿Dónde está mi código?</b>Aparece al terminar tu compra, por ejemplo NS-1001.</p></div>
         <div><Ico n="celular" /><p><b>Usa el mismo celular</b>El que escribiste al hacer el pedido, sin espacios ni prefijo.</p></div>
@@ -845,11 +1011,17 @@ function Seguimiento({ codigo: codInicial = '', celularInicial = '', recien = fa
             {pedido.items.map((i) => (
               <div key={i.productoId} className="ti">
                 <FotoProducto p={{ nombre: i.nombre, presentacion: '' }} chica />
-                <span><b>{i.nombre}</b><small className="num">{i.cantidad} × {money(i.precio)}</small></span>
+                <span><b>{i.nombre}</b><small className="num">{i.cantidad} × {money(i.precio)}</small>{i.contieneAine && <small className="n-aine"><Ico n="alerta" />Contiene AINE</small>}</span>
                 <b className="num">{money(i.cantidad * i.precio)}</b>
               </div>
             ))}
             <div className="ti-total num"><span>Total</span><b>{money(pedido.total)}</b></div>
+            {['Entregado', 'Cancelado'].includes(pedido.estado) && (
+              <button type="button" className={'btn sec full repetir' + (repetir.cargando ? ' cargando' : '')} onClick={volverAPedir} disabled={repetir.cargando}>
+                {repetir.cargando ? <><span className="spin" aria-hidden="true" />Revisando stock…</> : <><Ico n="repetir" />Volver a pedir lo mismo</>}
+              </button>
+            )}
+            {repetir.msg && <div className="alert" role="alert">{repetir.msg}</div>}
           </div>
           <div className="track-info" data-r style={{ '--i': 2 }}>
             <h2>Detalles</h2>
@@ -869,6 +1041,32 @@ function Seguimiento({ codigo: codInicial = '', celularInicial = '', recien = fa
         </div>
       </section>
     </div>
+  )
+}
+
+// Pedidos hechos o consultados desde este equipo: un toque para volver a verlos.
+function PedidosRecientes() {
+  const { pedidos, olvidarPedidos } = useCarrito()
+  if (!pedidos.length) return null
+  const fecha = (f) => f ? new Date(f).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : ''
+  return (
+    <section className="recientes" aria-labelledby="rec-t">
+      <div className="recientes-head">
+        <h2 id="rec-t">Tus pedidos en este equipo</h2>
+        <button type="button" className="link" onClick={olvidarPedidos}>Olvidar</button>
+      </div>
+      <ul>
+        {pedidos.map((p) => (
+          <li key={p.codigo}>
+            <a href={`#/pedido/${encodeURIComponent(p.codigo)}?c=${p.celular}`}>
+              <Ico n="caja" />
+              <span><b className="num">{p.codigo}</b><small>{[fecha(p.fecha), p.total != null && money(p.total)].filter(Boolean).join(' · ') || 'Ver estado'}</small></span>
+              <svg className="rec-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 

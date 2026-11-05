@@ -375,7 +375,7 @@ html:not(.js) .ui-checks i::after { transform: rotate(45deg); opacity: 1 }
 .card.off { opacity: .6 }
 .card-media { position: relative; aspect-ratio: 1 / 1; background: var(--panel) }
 .foto { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; background: var(--panel) }
-.foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 10%; mix-blend-mode: multiply; opacity: 0; transition: opacity 400ms ease, transform 600ms var(--ease-out) }
+.foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; opacity: 0; transition: opacity 400ms ease, transform 600ms var(--ease-out) }
 .foto.ok img { opacity: 1 }
 .foto.ok .envase { opacity: 0 }
 .envase { width: 46%; height: auto; fill: none; stroke: var(--teal-d); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; transition: transform 500ms var(--ease-out), opacity 300ms ease }
@@ -850,6 +850,125 @@ html:not(.js) .ui-checks i::after { transform: rotate(45deg); opacity: 1 }
   .track-bar b { font-size: 0.875rem; line-height: 1.25 }
   .confeti { left: calc(24px + 32px); top: 56px }
 }
+
+/* ---------- Filtros rápidos ---------- */
+.filtros { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap }
+.filtros .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; font-size: 0.9375rem }
+.filtros .chip .ico { width: 17px; height: 17px }
+.filtros .chip.on .ico { fill: currentColor }
+.chip-n { background: var(--mint); color: var(--ink); border-radius: var(--r); padding: 0 6px; font-size: 0.8125rem; font-weight: 700; line-height: 1.5 }
+.chip.on .chip-n { background: rgba(255, 255, 255, .2); color: #fff }
+
+/* ---------- Alergia a los AINEs ---------- */
+.alergia { display: flex; flex-direction: column; gap: 10px; background: #fff; border: 1.5px solid var(--line); border-radius: var(--r); padding: 14px 16px; margin-top: 4px; transition: border-color 200ms ease, background-color 200ms ease }
+.alergia.on { border-color: #F2A39A; background: #FFF6F5 }
+.alergia .check { align-items: flex-start }
+.alergia .check input { margin-top: 3px; accent-color: var(--red); flex: none }
+.alergia .check b { display: inline-flex; gap: 8px; align-items: center; font-weight: 600 }
+.alergia .check b .ico { width: 18px; height: 18px; color: var(--red) }
+.alergia.on .check b { color: var(--red) }
+.alergia .check small { display: block; color: var(--soft); font-size: 0.9375rem; margin-top: 2px; max-width: 70ch }
+.alergia .check.sub { padding-left: 28px; font-size: 0.9375rem; align-items: center }
+.alergia .check.sub input { margin-top: 0 }
+.badge.aine { background: var(--red); color: #fff }
+.card.riesgo { box-shadow: inset 0 0 0 2px #F2A39A } /* taste-skill-ignore: producto no recomendado */
+.aine-aviso { display: flex; gap: 8px; align-items: flex-start; background: var(--red-l); color: var(--red); font-size: 0.875rem; font-weight: 600; line-height: 1.35; border-radius: var(--r); padding: 8px 10px; margin-top: 8px }
+.aine-aviso .ico { width: 17px; height: 17px; flex: none; margin-top: 1px }
+.aine-aviso.grande { font-size: 1rem; padding: 12px 14px; margin-top: 0 }
+.nota { display: flex; gap: 8px; align-items: flex-start }
+.nota > .ico { width: 18px; height: 18px; flex: none; margin-top: 3px }
+.nota .link { min-height: 0; font-size: inherit; color: var(--amber); font-weight: 600 }
+.nota.faltan { margin-bottom: 20px }
+.n-aine { display: inline-flex !important; align-items: center; gap: 4px; color: var(--red) !important; font-weight: 600; font-size: 0.875rem !important }
+.n-aine .ico { width: 14px; height: 14px }
+.toast.warn { background: #7A1A12 }
+.toast-ico { width: 20px; height: 20px; color: #FFB4AA }
+.toast.warn a { color: #FFD3CD }
+
+/* ---------- Favoritos ---------- */
+.card-abrir { position: absolute; inset: 0; border: 0; padding: 0; background: none; cursor: zoom-in }
+.card-tit { border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer }
+@media (hover: hover) and (pointer: fine) { .card-tit:hover { color: var(--teal) } }
+.fav { position: absolute; top: 8px; right: 8px; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .85); color: var(--soft); transition: transform 160ms var(--ease-out), color 200ms ease, background-color 200ms ease }
+.fav .ico { width: 21px; height: 21px; transition: fill 200ms ease }
+.fav:active { transform: scale(.88) }
+.fav.on { color: var(--red) }
+.fav.on .ico { fill: currentColor; animation: pop 380ms var(--ease-out) }
+@media (hover: hover) and (pointer: fine) { .fav:hover { background: #fff; color: var(--red) } }
+.fav.grande { position: static; width: 48px; height: 48px; background: var(--panel); border-radius: var(--r) }
+
+/* ---------- Ficha de producto ---------- */
+.sin-scroll { overflow: hidden }
+.ficha { border: 0; padding: 0; margin: auto; width: min(920px, calc(100% - 32px)); max-height: calc(100dvh - 48px); background: #fff; color: var(--ink); border-radius: var(--r); box-shadow: 0 40px 80px -30px rgba(7, 46, 42, .6) } /* taste-skill-ignore: ventana flotante */
+.ficha::backdrop { background: rgba(7, 46, 42, .55); backdrop-filter: blur(2px) }
+.ficha[open] { animation: fichaIn 380ms var(--ease-drawer) }
+@keyframes fichaIn { from { opacity: 0; transform: translateY(24px) scale(.98) } }
+.ficha-in { position: relative; display: grid; grid-template-columns: 1fr 1fr; max-height: calc(100dvh - 48px); overflow-y: auto; overscroll-behavior: contain }
+.ficha-cerrar { position: absolute; top: 10px; right: 10px; z-index: 2; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--ground) }
+.ficha-cerrar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round }
+@media (hover: hover) and (pointer: fine) { .ficha-cerrar:hover { background: var(--mint) } }
+.ficha-media { position: relative; aspect-ratio: 1 / 1; background: var(--panel) }
+.ficha-info { padding: clamp(24px, 3vw, 40px); display: flex; flex-direction: column; gap: 6px }
+.ficha-info h2 { font-size: clamp(1.75rem, 1.3rem + 1.4vw, 2.5rem); font-weight: 700; padding-right: 40px }
+.ficha-precio { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-top: 12px }
+.ficha-precio b { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em }
+.ficha-precio s { color: var(--soft) }
+.ficha-ahorro { background: var(--green-l); color: var(--green); font-size: 0.875rem; font-weight: 600; padding: 2px 8px; border-radius: var(--r) }
+.ficha-datos { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 6px; padding: 14px 0; border-block: 1px solid var(--line) }
+.ficha-datos li { display: flex; gap: 10px; align-items: center; font-size: 1rem }
+.ficha-datos .ico { color: var(--teal) }
+.ficha-acc { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: auto; padding-top: 16px }
+.ficha-acc .add { flex: 1; min-height: 52px }
+.ficha-acc .stepper button { height: 52px; width: 48px }
+.ficha-rel { grid-column: 1 / -1; padding: 24px clamp(24px, 3vw, 40px) 32px; background: var(--ground) }
+.ficha-rel h3 { font-size: 1.125rem; font-weight: 600 }
+.ficha-rel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px }
+.rel { display: flex; gap: 12px; align-items: center; text-align: left; border: 0; background: #fff; padding: 10px; border-radius: var(--r); transition: transform 200ms var(--ease-out) }
+.rel b { display: block; font-weight: 600; font-size: 0.9375rem; line-height: 1.25 }
+.rel small { color: var(--soft); font-size: 0.875rem }
+@media (hover: hover) and (pointer: fine) { .rel:hover { transform: translateY(-2px) } }
+
+/* ---------- Barra del carrito (celular) ---------- */
+.barra-carrito { display: none }
+@media (max-width: 760px) {
+  .barra-carrito { position: fixed; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 40; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 56px; padding: 0 18px; background: var(--ink); color: #fff; text-decoration: none; border-radius: var(--r); box-shadow: 0 16px 36px -14px rgba(7, 46, 42, .6); transform: translateY(160%); transition: transform 420ms var(--ease-drawer) } /* taste-skill-ignore: barra fija */
+  .barra-carrito.on { transform: none }
+  .barra-carrito > span:last-child { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #8FE0D2 }
+  .barra-carrito svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round }
+  .barra-carrito.on ~ .toast { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 68px) }
+  body:has(.barra-carrito.on) .foot { padding-bottom: 72px }
+  .filtros { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(var(--gut) * -1); padding-inline: var(--gut) }
+  .filtros::-webkit-scrollbar { display: none }
+  .filtros .chip { white-space: nowrap }
+  .toast { left: 12px; right: 12px; max-width: none; transform: translateY(160%) }
+  .toast.show { transform: none }
+  .alergia { padding: 12px 14px }
+  .alergia:not(.on) .check small { display: none }
+  .fav { width: 40px; height: 40px; top: 6px; right: 6px }
+  .ficha { width: 100%; max-width: none; max-height: 92dvh; margin: auto 0 0; border-radius: var(--r) var(--r) 0 0 }
+  .ficha[open] { animation: fichaSube 420ms var(--ease-drawer) }
+  @keyframes fichaSube { from { transform: translateY(100%) } }
+  .ficha-in { grid-template-columns: 1fr; max-height: 92dvh }
+  .ficha-media { aspect-ratio: 4 / 3 }
+  .ficha-rel-grid { grid-template-columns: 1fr }
+  .ficha-acc { position: sticky; bottom: 0; background: #fff; padding-bottom: 4px }
+}
+
+/* ---------- Pedidos recientes y volver a pedir ---------- */
+.recientes { margin-top: 16px; background: var(--panel); padding: 20px; border-radius: var(--r) }
+.recientes-head { display: flex; justify-content: space-between; align-items: center; gap: 12px }
+.recientes h2 { font-size: 1.125rem; font-weight: 600 }
+.recientes ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-top: 8px }
+.recientes a { display: flex; align-items: center; gap: 12px; background: #fff; padding: 12px 14px; border-radius: var(--r); color: var(--ink); text-decoration: none; min-height: 56px; transition: transform 200ms var(--ease-out) }
+.recientes a > .ico { color: var(--teal); width: 24px; height: 24px }
+.recientes a > span { flex: 1; min-width: 0 }
+.recientes b { display: block; font-weight: 700; letter-spacing: 0.02em }
+.recientes small { display: block; color: var(--soft); font-size: 0.875rem }
+.rec-flecha { width: 18px; height: 18px; fill: none; stroke: var(--teal); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 300ms var(--ease-out) }
+@media (hover: hover) and (pointer: fine) { .recientes a:hover { transform: translateY(-2px) } .recientes a:hover .rec-flecha { transform: translateX(4px) } }
+.repetir { margin-top: 16px }
+.repetir .ico { color: var(--teal) }
+.track-items > .alert { margin-top: 10px }
 
 /* ---------- Menos movimiento ---------- */
 @media (prefers-reduced-motion: reduce) {
