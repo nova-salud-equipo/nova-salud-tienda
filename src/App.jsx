@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { api, money } from './api.js'
 import { useCarrito } from './carrito.jsx'
+import { descargarComprobante } from './comprobante.js'
 
 const menosMovimiento = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -768,6 +769,15 @@ const PASOS = ['Pendiente', 'Preparado', 'Entregado']
 function Seguimiento({ codigo: codInicial = '', celularInicial = '', recien = false }) {
   const ref = useRef(null)
   const [pedido, setPedido] = useState(null)
+  const [descargando, setDescargando] = useState(false)
+  const [errorPdf, setErrorPdf] = useState('')
+  const descargar = async () => {
+    setDescargando(true)
+    setErrorPdf('')
+    try { await descargarComprobante(pedido) }
+    catch { setErrorPdf('No pudimos generar el comprobante PDF. Inténtalo de nuevo.') }
+    finally { setDescargando(false) }
+  }
   const [error, setError] = useState('')
   const [actualizado, setActualizado] = useState(null)
   const consultar = async (cod, cel) => {
@@ -850,7 +860,11 @@ function Seguimiento({ codigo: codInicial = '', celularInicial = '', recien = fa
             <div className="track-acc">
               <a className="btn" href="#/">Volver a la tienda</a>
               <a className="btn sec" href="https://www.google.com/maps/search/?api=1&query=Av.+Principal+123,+Lima" target="_blank" rel="noreferrer"><Ico n="pin" />Cómo llegar</a>
+              <button type="button" className={'btn sec' + (descargando ? ' cargando' : '')} onClick={descargar} disabled={descargando} aria-busy={descargando}>
+                {descargando ? <><span className="spin" aria-hidden="true" />Generando PDF…</> : 'Descargar comprobante PDF'}
+              </button>
             </div>
+            {errorPdf && <div className="alert" role="alert">{errorPdf}</div>}
           </div>
         </div>
       </section>
