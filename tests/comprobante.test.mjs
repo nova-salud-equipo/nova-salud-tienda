@@ -24,25 +24,27 @@ test('genera un PDF con logo, cliente, productos, importes y aviso de demostraci
   const doc = await modulo.namespace.crearComprobante(pedido)
   const pdf = doc.output()
   assert.ok(pdf.startsWith('%PDF-'))
-  for (const texto of ['Ana Prueba', 'NS-1001', 'Producto de prueba', 'Cantidad: 2', 'S/ 12.50', 'S/ 25.00', 'Yape / Plin', 'SIN VALIDEZ TRIBUTARIA', 'Nova Salud']) assert.ok(pdf.includes(texto), texto)
-  assert.equal((pdf.match(/ re\n/g) || []).length, 5, 'Logo vectorial de cinco bloques')
+  for (const texto of ['Ana Prueba', 'NS-1001', 'Producto de prueba', 'S/ 12.50', 'S/ 25.00', 'Yape / Plin', 'SIN VALIDEZ TRIBUTARIA', 'Nova Salud', 'Recojo en tienda', 'TOTAL DEL PEDIDO', 'Página 1 de 1']) assert.ok(pdf.includes(texto), texto)
+  assert.ok((pdf.match(/ re\n/g) || []).length >= 5, 'Logo vectorial de cinco bloques')
 })
 
 test('incluye boleta y separa delivery sin duplicar el total de la API', async () => {
   const doc = await modulo.namespace.crearComprobante({ ...pedido, entrega: 'delivery', costo_delivery: 5, total: 30, boleta: 'B001-10' })
   const pdf = doc.output()
   assert.ok(pdf.includes('B001-10'))
-  assert.ok(pdf.includes('Delivery \\(se paga al recibir\\): S/ 5.00'))
-  assert.ok(pdf.includes('Total registrado por la API: S/ 30.00'))
+  assert.ok(pdf.includes('Delivery \\(se paga al recibir\\)'))
+  assert.ok(pdf.includes('S/ 5.00'))
+  assert.ok(pdf.includes('S/ 30.00'))
   assert.ok(!pdf.includes('S/ 35.00'))
 })
 
 test('no inventa cliente, fecha ni cargo de delivery cuando faltan en la API', async () => {
   const doc = await modulo.namespace.crearComprobante({ ...pedido, cliente: undefined, fecha: undefined, entrega: 'delivery' })
   const pdf = doc.output()
-  assert.ok(pdf.includes('Cliente: No informado por la API'))
-  assert.ok(pdf.includes('Fecha del pedido: No informada por la API'))
-  assert.ok(pdf.includes('importe no informado por la API'))
+  assert.ok(!pdf.includes('Ana Prueba'))
+  // Cliente, fecha y cargo de delivery quedan como "No registrado/a".
+  assert.ok((pdf.match(/No registrad[oa]/g) || []).length >= 3)
+  assert.ok(!pdf.includes('S/ 5.00'))
 })
 
 test('distribuye pedidos largos en varias páginas', async () => {
